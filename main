@@ -1,0 +1,91 @@
+#!/bin/bash
+#PBS -l nodes=1:ppn=1,vmem=8g,walltime=2:00:00
+#PBS -N app-mri-registration-qc
+#PBS -V
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONTAINER_IMAGE="docker://gamorosino/tract_align:v1.0"
+
+run_in_env() {
+        singularity  exec -e \
+            "${CONTAINER_IMAGE}" \
+                micromamba run -n tract_align "$@"
+    }
+
+# ---------------------------------------------------------------------------
+# Read parameters from config.json
+# ---------------------------------------------------------------------------
+fixed=$(jq -r '.fixed // empty'   config.json)
+moving=$(jq -r '.moving // empty'  config.json)
+mask=$(jq  -r '.mask   // empty'  config.json)
+tiles=$(jq -r '.checkerboard_tiles // 8' config.json)
+
+# ---------------------------------------------------------------------------
+# Validate required inputs
+# ---------------------------------------------------------------------------
+if [ -z "$fixed" ] || [ "$fixed" = "null" ]; then
+    echo "Error: 'fixed' image path is missing from config.json" >&2
+    exit 1
+fi
+
+if [ -z "$moving" ] || [ "$moving" = "null" ]; then
+    echo "Error: 'moving' image path is missing from config.json" >&2
+    exit 1
+fi
+
+if [ ! -f "$fixed" ]; then
+    echo "Error: fixed image not found: $fixed" >&2
+    exit 1
+fi
+
+if [ ! -f "$moving" ]; then
+    echo "Error: moving image not found: $moving" >&2
+    exit 1
+fi
+
+echo "Fixed image:  $fixed"
+echo "Moving image: $moving"
+
+# ---------------------------------------------------------------------------
+# Build optional arguments
+# ---------------------------------------------------------------------------
+EXTRA_ARGS=""
+if [ -n "$mask" ] && [ "$mask" != "null" ] && [ -f "$mask" ]; then
+    echo "Brain mask:   $mask"
+    EXTRA_ARGS="$EXTRA_ARGS --mask $mask"
+fi
+
+# ---------------------------------------------------------------------------
+# Run QC script
+# ---------------------------------------------------------------------------
+echo "Running registration_qc.py ..."
+python3 "${SCRIPT_DIR}/registration_qc.py" \
+    --fixed  "$fixed"  \
+    --moving "$moving" \
+    --outdir output    \
+    --checkerboard-tiles "$tiles" \
+    $EXTRA_ARGS
+
+# ---------------------------------------------------------------------------
+# Run AFNI edge-based alignment check (if AFNI is available)
+# ---------------------------------------------------------------------------
+
+echo "Running @djunct_edgy_align_check ..."
+singularity  exec -e  brainlife/afni:16.3.0 \
+    @djunct_edgy_align_check        \
+        -ulay             "$moving" \
+        -olay             "$fixed"  \
+        -box_focus_slices "$fixed"  \
+        -use_olay_grid    NN        \
+        -prefix           output/edgy_align
+echo "AFNI edge alignment check complete."
+
+# ---------------------------------------------------------------------------
+# Generate product.json for brainlife
+# ---------------------------------------------------------------------------
+echo "Generating product.json ..."
+bash "${SCRIPT_DIR}/generate_product_json.sh" output product.json
+
+echo "Registration QC complete."

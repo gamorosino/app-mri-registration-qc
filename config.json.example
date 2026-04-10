@@ -1,0 +1,6 @@
+{
+    "fixed":  "path/to/fixed.nii.gz",
+    "moving": "path/to/registered.nii.gz",
+    "mask":   null,
+    "checkerboard_tiles": 8
+}

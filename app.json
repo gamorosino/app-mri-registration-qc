@@ -1,0 +1,56 @@
+{
+    "name": "app-mri-registration-qc",
+    "version": "1.0.0",
+    "brainlife": true,
+
+    "title": "Registration QC",
+    "desc": "Quality check for MRI image registration. Computes voxel-based similarity metrics (NMI, NCC, MSE, SSIM) between a fixed reference image and a registered (moving) image, and generates visual QC figures (checkerboard, edge-overlay, difference map) for axial, coronal, and sagittal views. When AFNI is available, also runs @djunct_edgy_align_check to produce additional edge-based alignment figures (edgy_align.*.png).",
+    "author": "Gabriele Amorosino <gabriele.amorosino@utexas.edu>",
+    "cite": "Hayashi, S., et al. (2024). brainlife.io: a decentralized and open-source cloud platform to support neuroscience research. Nature methods, 21(5), 809-813.",
+    "tags": ["registration", "qc", "quality-control", "mri", "alignment", "similarity"],
+    "source": "https://github.com/gamorosino/app-mri-registration-qc",
+
+    "inputs": [
+        {
+            "id": "fixed",
+            "datatype": "neuro/anat/t1w",
+            "desc": "Fixed (reference) MRI image in NIfTI format",
+            "optional": false
+        },
+        {
+            "id": "moving",
+            "datatype": "neuro/anat/t1w",
+            "desc": "Moving (registered) MRI image in NIfTI format — must be in the same space as the fixed image",
+            "optional": false
+        },
+        {
+            "id": "mask",
+            "datatype": "neuro/mask",
+            "desc": "Optional binary brain mask in fixed image space, used to restrict metric computation to the brain",
+            "optional": true
+        }
+    ],
+
+    "outputs": [
+        {
+            "id": "output",
+            "datatype": "raw",
+            "desc": "QC report: metrics.json and PNG figures (axial, coronal, sagittal)",
+            "files": [{"name": "output"}]
+        }
+    ],
+
+    "config": {
+        "checkerboard_tiles": {
+            "type": "integer",
+            "default": 8,
+            "desc": "Number of checkerboard tiles per axis in the overlay figure"
+        }
+    },
+
+    "resource": {
+        "cpu": 1,
+        "ram": 4,
+        "walltime": "01:00:00"
+    }
+}
