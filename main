@@ -73,7 +73,7 @@ run_in_env python3 "${SCRIPT_DIR}/registration_qc.py" \
 # ---------------------------------------------------------------------------
 
 echo "Running @djunct_edgy_align_check ..."
-singularity  exec -e  brainlife/afni:16.3.0 \
+singularity  exec -e  docker://brainlife/afni:16.3.0 \
     @djunct_edgy_align_check        \
         -ulay             "$moving" \
         -olay             "$fixed"  \
