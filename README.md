@@ -38,8 +38,7 @@ The pipeline performs:
    - Registered (moving) image
    - Checkerboard + fixed-image edge overlay
    - Absolute difference map
-6. **AFNI edge-alignment figures** *(optional, requires AFNI)* — When AFNI is
-   available in the environment, `@djunct_edgy_align_check` is run to produce
+6. **AFNI edge-alignment figures** `@djunct_edgy_align_check` is run to produce
    an additional set of edge-based alignment montages (`edgy_align.*.png`).
    These use `3dedge3` to outline meaningful anatomical edges of the fixed image
    overlaid on the moving image, providing an intuitive visual check of
