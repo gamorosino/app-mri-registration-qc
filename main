@@ -86,6 +86,6 @@ echo "AFNI edge alignment check complete."
 # Generate product.json for brainlife
 # ---------------------------------------------------------------------------
 echo "Generating product.json ..."
-bash "${SCRIPT_DIR}/generate_product_json.sh" output product.json
+bash "${SCRIPT_DIR}/generate_product_json.sh" --compress output product.json
 
 echo "Registration QC complete."
