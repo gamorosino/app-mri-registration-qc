@@ -154,7 +154,3 @@ If you use this app in a publication, please cite:
 - Cox, R. W. (1996). AFNI: software for analysis and visualization of functional magnetic resonance neuroimages.
   Computers and Biomedical research, 29(3), 162-173.
 ---
-
-## License
-
-This project is released under the [MIT License](LICENSE).
