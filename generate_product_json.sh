@@ -68,7 +68,9 @@ if [[ -f "$metrics_file" ]]; then
     metrics_json="$(cat "$metrics_file")"
 fi
 
-mapfile -d '' images < <(find "${image_dir}" -type f -name "*.png" -print0 | sort -z)
+mapfile -d '' images < <(
+    find "${image_dir}" -type f \( -iname "*.png" -o -iname "*.jpg" -o -iname "*.jpeg" \) -print0 | sort -z
+)
 num_images="${#images[@]}"
 
 if [[ "$num_images" -eq 0 ]]; then
@@ -88,15 +90,22 @@ fi
 # ----------------------------
 IMG_CONTAINER="${IMG_CONTAINER:-docker://brainlife/imagemagick:latest}"
 
-img_resize() {
+IMG_CONTAINER="${IMG_CONTAINER:-docker://brainlife/imagemagick:latest}"
+
+img_to_png() {
     local input="$1"
     local output="$2"
     local percent="$3"
 
+    local resize_args=()
+    if [[ "$percent" -lt 100 ]]; then
+        resize_args=(-resize "${percent}%")
+    fi
+
     if command -v apptainer >/dev/null 2>&1; then
-        apptainer exec "$IMG_CONTAINER" convert "$input" -resize "${percent}%" "$output"
+        apptainer exec "$IMG_CONTAINER" convert "$input" "${resize_args[@]}" PNG:"$output"
     elif command -v singularity >/dev/null 2>&1; then
-        singularity exec "$IMG_CONTAINER" convert "$input" -resize "${percent}%" "$output"
+        singularity exec "$IMG_CONTAINER" convert "$input" "${resize_args[@]}" PNG:"$output"
     else
         echo "Error: --compress requires apptainer or singularity." >&2
         exit 1
@@ -114,26 +123,32 @@ build_product_json() {
     local idx=0
 
     for image in "${images[@]}"; do
-        local base
-        base="$(basename "$image" .png)"
-
-        local src_image="$image"
-        local working_image="$image"
-
-        if [[ "$compress" == true && "$scale_percent" -lt 100 ]]; then
-            working_image="${TMPDIR}/img_${idx}.png"
-            img_resize "$src_image" "$working_image" "$scale_percent"
+        local filename base ext
+        filename="$(basename "$image")"
+        base="${filename%.*}"
+        ext="${filename##*.}"
+        ext="${ext,,}"   # lowercase
+    
+        local working_image="${TMPDIR}/img_${idx}.png"
+    
+        if [[ "$compress" == true ]]; then
+            img_to_png "$image" "$working_image" "$scale_percent"
+        else
+            if [[ "$ext" == "png" ]]; then
+                working_image="$image"
+            else
+                img_to_png "$image" "$working_image" 100
+            fi
         fi
-
+    
         local b64
         b64="$(base64 -w 0 "$working_image")"
-        total_base64_chars=$((total_base64_chars + ${#b64}))
-
+    
         local entry
         entry=$(printf '{"type":"image/png","name":"%s","base64":"%s"}' \
             "$base" "$b64")
         qa_entries+=("$entry")
-
+    
         idx=$((idx + 1))
     done
 
