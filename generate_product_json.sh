@@ -86,21 +86,22 @@ fi
 # ----------------------------
 # Choose image resize command
 # ----------------------------
+IMG_CONTAINER="${IMG_CONTAINER:-docker://brainlife/imagemagick:latest}"
+
 img_resize() {
     local input="$1"
     local output="$2"
     local percent="$3"
 
-    if command -v magick >/dev/null 2>&1; then
-        magick "$input" -resize "${percent}%" "$output"
-    elif command -v convert >/dev/null 2>&1; then
-        convert "$input" -resize "${percent}%" "$output"
+    if command -v apptainer >/dev/null 2>&1; then
+        apptainer exec "$IMG_CONTAINER" convert "$input" -resize "${percent}%" "$output"
+    elif command -v singularity >/dev/null 2>&1; then
+        singularity exec "$IMG_CONTAINER" convert "$input" -resize "${percent}%" "$output"
     else
-        echo "Error: --compress requires ImageMagick ('magick' or 'convert')." >&2
+        echo "Error: --compress requires apptainer or singularity." >&2
         exit 1
     fi
 }
-
 # ----------------------------
 # Build product.json at a given scale
 # ----------------------------
