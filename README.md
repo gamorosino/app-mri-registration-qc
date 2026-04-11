@@ -55,16 +55,23 @@ and mid-slice selection to the brain region.
 
 ## Requirements
 
-- Python ≥ 3.8 with `nibabel`, `numpy`, `scipy`, `matplotlib`
-- `jq` (for the `main` bash entry-point)
-- **AFNI** *(optional)* — when installed, `@djunct_edgy_align_check` is used to
-  generate additional edge-based alignment figures.  Install from
-  https://afni.nimh.nih.gov/pub/dist/doc/htmldoc/background_install/install_instructs/index.html
+To run the app, you only need one of:
 
-Install Python dependencies:
-```bash
-pip install nibabel numpy scipy matplotlib
-```
+- **Singularity / Apptainer**
+
+All required software dependencies are already included in the container image, including:
+
+- Python ≥ 3.8
+- `nibabel`
+- `numpy`
+- `scipy`
+- `matplotlib`
+- `jq`
+- **AFNI 26.1.00**
+
+The pipeline uses `@djunct_edgy_align_check` to generate additional
+edge-based alignment figures as part of the QC workflow, and AFNI is
+therefore required by the current implementation.
 
 ---
 
@@ -144,7 +151,8 @@ If you use this app in a publication, please cite:
 - Hayashi, S., Caron, B. A., Heinsfeld, A. S., … & Pestilli, F. (2024).
   brainlife.io: a decentralized and open-source cloud platform to support
   neuroscience research. *Nature methods*, 21(5), 809–813.
-
+- Cox, R. W. (1996). AFNI: software for analysis and visualization of functional magnetic resonance neuroimages.
+  Computers and Biomedical research, 29(3), 162-173.
 ---
 
 ## License
