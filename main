@@ -90,5 +90,5 @@ bash "${SCRIPT_DIR}/generate_product_json.sh" --compress output product.json
 
 IMAGE_DIR="output"
 OUTPUT_DIR="."
-baSH ${SCRIPT_DIR}/generate_figures_manifest.sh "$IMAGE_DIR" "$OUTPUT_DIR"
+bash ${SCRIPT_DIR}/generate_figures_manifest.sh "$IMAGE_DIR" "$OUTPUT_DIR"
 echo "Registration QC complete."
