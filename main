@@ -21,7 +21,7 @@ fixed=$(jq -r '.fixed // empty'   config.json)
 moving=$(jq -r '.moving // empty'  config.json)
 mask=$(jq  -r '.mask   // empty'  config.json)
 tiles=$(jq -r '.checkerboard_tiles // 8' config.json)
-
+thr_mask=$(jq -r '.thr_mask // empty | if type=="array" then join(",") else tostring end' config.json)
 # ---------------------------------------------------------------------------
 # Validate required inputs
 # ---------------------------------------------------------------------------
@@ -55,6 +55,11 @@ EXTRA_ARGS=""
 if [ -n "$mask" ] && [ "$mask" != "null" ] && [ -f "$mask" ]; then
     echo "Brain mask:   $mask"
     EXTRA_ARGS="$EXTRA_ARGS --mask $mask"
+fi
+
+if [ -n "$thr_mask" ] && [ "$thr_mask" != "null" ]; then
+    echo "Threshold mask: $thr_mask"
+    EXTRA_ARGS="$EXTRA_ARGS --thr-mask $thr_mask"
 fi
 
 # ---------------------------------------------------------------------------
