@@ -31,6 +31,38 @@ from scipy.ndimage import sobel
 # Helpers
 # ---------------------------------------------------------------------------
 
+def parse_thr_mask(thr_mask: str):
+    """
+    Parse threshold mask argument.
+
+    Examples
+    --------
+    "0.5"     -> lower=0.5, upper=None
+    "0.5,1"   -> lower=0.5, upper=1.0
+    """
+    if thr_mask is None or thr_mask in ("", "null", "None"):
+        return None
+
+    parts = [p.strip() for p in thr_mask.split(",") if p.strip() != ""]
+    if len(parts) not in (1, 2):
+        raise ValueError("--thr-mask must be LOW or LOW,HIGH")
+
+    lower = float(parts[0])
+    upper = float(parts[1]) if len(parts) == 2 else None
+
+    if upper is not None and upper <= lower:
+        raise ValueError("--thr-mask upper bound must be greater than lower bound")
+
+    return lower, upper
+
+
+def make_threshold_mask(data: np.ndarray, lower: float, upper: float = None) -> np.ndarray:
+    """Create a binary mask using lower and optional upper threshold."""
+    mask = data > lower
+    if upper is not None:
+        mask &= data < upper
+    return mask
+
 def load_nifti(path: str) -> nib.Nifti1Image:
     """Load a NIfTI file and return a Nifti1Image."""
     img = nib.load(path)
@@ -267,6 +299,7 @@ def plot_qc_figure(
     view_name: str,
     mask_data: np.ndarray = None,
     output_path: str = "qc.png",
+    n_checkerboard_tiles: int = 8,
 ):
     """
     Produce a 4-panel QC figure for one anatomical view.
@@ -288,7 +321,7 @@ def plot_qc_figure(
     m_norm = normalize(m_sl)
 
     diff = np.abs(f_norm - m_norm)
-    checker = _checkerboard(f_norm, m_norm)
+    checker = _checkerboard(f_norm, m_norm, n=n_checkerboard_tiles)
 
     # Edge overlay (fixed edges in green on moving image)
     edges = _edge_map(f_norm)
@@ -344,6 +377,7 @@ def run_qc(
     mask_path: str = None,
     output_dir: str = "output",
     n_checkerboard_tiles: int = 8,
+    thr_mask: str = None,
 ):
     """
     Full QC pipeline: load images, resample, compute metrics, save figures.
@@ -407,7 +441,38 @@ def run_qc(
 
     # Interpretation helpers (qualitative thresholds, rough guidelines)
     metrics["quality"] = _quality_label(metrics)
+    # Optional threshold-derived masks for overlap metrics
+    parsed_thr_mask = parse_thr_mask(thr_mask)
+    if parsed_thr_mask is not None:
+        lower, upper = parsed_thr_mask
 
+        fixed_thr_mask = make_threshold_mask(fixed_data, lower, upper)
+        moving_thr_mask = make_threshold_mask(moving_data, lower, upper)
+
+        if mask is not None:
+            fixed_thr_mask &= mask
+            moving_thr_mask &= mask
+
+        overlap = compute_overlap(fixed_thr_mask, moving_thr_mask)
+
+        metrics["thr_mask"] = {
+            "lower": lower,
+            "upper": upper,
+            "fixed_voxels": int(fixed_thr_mask.sum()),
+            "moving_voxels": int(moving_thr_mask.sum()),
+            "dice": overlap["dice"],
+            "jaccard": overlap["jaccard"],
+        }
+        # expose at top-level
+        metrics["dice"] = overlap["dice"]
+        metrics["jaccard"] = overlap["jaccard"]
+
+        print(
+            f"[QC]   Threshold mask = "
+            f"{lower}" + (f",{upper}" if upper is not None else "")
+        )
+        print(f"[QC]   Dice    = {overlap['dice']:.4f}")
+        print(f"[QC]   Jaccard = {overlap['jaccard']:.4f}")
     print(f"[QC]   NMI  = {metrics['nmi']:.4f}")
     print(f"[QC]   NCC  = {metrics['ncc']:.4f}")
     print(f"[QC]   MSE  = {metrics['mse']:.4f}")
@@ -426,13 +491,14 @@ def run_qc(
     for view_name, axis in VIEWS.items():
         out_png = os.path.join(output_dir, f"qc_{view_name}.png")
         plot_qc_figure(
-            fixed_data,
-            moving_data,
-            axis=axis,
-            view_name=view_name,
-            mask_data=mask,
-            output_path=out_png,
-        )
+                fixed_data,
+                moving_data,
+                axis=axis,
+                view_name=view_name,
+                mask_data=mask,
+                output_path=out_png,
+                n_checkerboard_tiles=n_checkerboard_tiles,
+            )
         generated_figures.append(out_png)
         print(f"[QC]   Saved {out_png}")
 
@@ -492,6 +558,15 @@ def parse_args():
         dest="tiles",
         help="Number of checkerboard tiles per axis (default: 8)"
     )
+    parser.add_argument(
+        "--thr-mask",
+        default=None,
+        help=(
+            "Optional threshold-derived masks for Dice/Jaccard. "
+            "Use LOW or LOW,HIGH, e.g. 0.5 or 0.5,1.0. "
+            "LOW means data > LOW; LOW,HIGH means LOW < data < HIGH."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -503,4 +578,5 @@ if __name__ == "__main__":
         mask_path=args.mask,
         output_dir=args.outdir,
         n_checkerboard_tiles=args.tiles,
+        thr_mask=args.thr_mask,
     )
