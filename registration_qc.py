@@ -44,7 +44,12 @@ def plot_mask_overlap(
 ):
     slices = get_multi_slices(fixed_mask, axis, mask, n_slices)
 
-    fig, axes = plt.subplots(1, len(slices), figsize=(3 * len(slices), 3))
+    fig, axes = plt.subplots(
+            1,
+            len(slices),
+            figsize=(1.35 * len(slices), 2.6),
+            gridspec_kw={"wspace": 0.01},
+        )
 
     if len(slices) == 1:
         axes = [axes]
@@ -73,24 +78,23 @@ def plot_mask_overlap(
     ]
 
     fig.legend(
-        handles=legend_elements,
-        loc="lower center",
-        bbox_to_anchor=(0.5, -0.15),
-        ncol=3,
-        fontsize=8,
-    )
+    handles=legend_elements,
+    loc="lower center",
+    bbox_to_anchor=(0.5, 0.02),
+    ncol=3,
+    fontsize=7,
+        )
 
-    fig.suptitle(f"Threshold mask overlap — {view_name}", fontsize=12)
-
-    plt.subplots_adjust(
-        left=0.01,
-        right=0.99,
-        top=0.88,
-        bottom=0.15,
-        wspace=0.02,
-        hspace=0.02,
+    fig.suptitle(f"Threshold mask overlap — {view_name}", fontsize=10)
+    fig.subplots_adjust(
+        left=0.005,
+        right=0.995,
+        top=0.82,
+        bottom=0.18,
+        wspace=0.01,
     )
-    plt.savefig(output_path, dpi=150, bbox_inches="tight", pad_inches=0.01)
+    
+    fig.savefig(output_path, dpi=150, bbox_inches="tight", pad_inches=0.01)
     plt.close(fig)
 
 def get_multi_slices(arr, axis, mask=None, n_slices=7, eps=1e-8):
