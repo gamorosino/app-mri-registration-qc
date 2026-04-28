@@ -63,7 +63,8 @@ def plot_mask_overlap(
         ax.imshow(rgb.transpose(1, 0, 2), origin="lower")
         ax.set_title(f"{idx}", fontsize=8)
         ax.axis("off")
-
+        ax.set_xticks([])
+        ax.set_yticks([])
     # legend (once)
     legend_elements = [
         Patch(facecolor="green", label="Overlap (TP)"),
@@ -81,8 +82,15 @@ def plot_mask_overlap(
 
     fig.suptitle(f"Threshold mask overlap — {view_name}", fontsize=12)
 
-    plt.tight_layout()
-    plt.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.subplots_adjust(
+        left=0.01,
+        right=0.99,
+        top=0.88,
+        bottom=0.15,
+        wspace=0.02,
+        hspace=0.02,
+    )
+    plt.savefig(output_path, dpi=150, bbox_inches="tight", pad_inches=0.01)
     plt.close(fig)
 
 def get_multi_slices(arr, axis, mask=None, n_slices=7):
