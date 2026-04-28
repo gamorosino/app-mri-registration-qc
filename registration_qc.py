@@ -86,19 +86,34 @@ def plot_mask_overlap(
     plt.close(fig)
 
 def get_multi_slices(arr, axis, mask=None, n_slices=7):
+    """
+    Select representative slice indices, avoiding empty tails.
+
+    For 7 slices, uses percentiles:
+    10%, 20%, 30%, 50%, 70%, 80%, 90%
+
+    If a mask is provided, percentiles are computed over foreground
+    voxel coordinates along the requested axis.
+    """
     size = arr.shape[axis]
 
-    if mask is not None:
-        coords = np.where(mask)
-        lo = coords[axis].min()
-        hi = coords[axis].max()
+    if mask is not None and np.any(mask):
+        coords = np.where(mask)[axis]
+        percentiles = [10, 20, 30, 50, 70, 80, 90]
+        slices = np.percentile(coords, percentiles).astype(int)
     else:
-        lo, hi = 0, size - 1
+        percentiles = [10, 20, 30, 50, 70, 80, 90]
+        slices = np.percentile(np.arange(size), percentiles).astype(int)
 
-    if hi <= lo:
-        return [size // 2]
+    slices = np.clip(slices, 0, size - 1)
 
-    return np.linspace(lo, hi, n_slices).astype(int).tolist()
+    # remove duplicates while preserving order
+    unique_slices = []
+    for s in slices.tolist():
+        if s not in unique_slices:
+            unique_slices.append(s)
+
+    return unique_slices
 
 def parse_thr_mask(thr_mask: str):
     """
