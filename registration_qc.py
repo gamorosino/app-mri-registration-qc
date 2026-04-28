@@ -94,7 +94,7 @@ def plot_mask_overlap(
     wspace=0.01,
         )
     
-    fig.savefig(output_path, dpi=150, bbox_inches="tight", pad_inches=0.01)
+    fig.savefig(output_path, dpi=300, bbox_inches="tight", pad_inches=0.01)
     plt.close(fig)
 
 def get_multi_slices(arr, axis, mask=None, n_slices=7, eps=1e-8):
