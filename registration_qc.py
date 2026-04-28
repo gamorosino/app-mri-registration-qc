@@ -93,35 +93,51 @@ def plot_mask_overlap(
     plt.savefig(output_path, dpi=150, bbox_inches="tight", pad_inches=0.01)
     plt.close(fig)
 
-def get_multi_slices(arr, axis, mask=None, n_slices=7):
+def get_multi_slices(arr, axis, mask=None, n_slices=7, eps=1e-8):
     """
-    Select representative slice indices, avoiding empty tails.
+    Select representative slice indices while avoiding empty image tails.
 
-    For 7 slices, uses percentiles:
+    Priority:
+    1. If mask is provided, use its foreground bounding box.
+    2. Otherwise, infer foreground from non-zero / finite image voxels.
+    3. Sample internal percentiles within that bounding range.
+
+    For 7 slices:
     10%, 20%, 30%, 50%, 70%, 80%, 90%
-
-    If a mask is provided, percentiles are computed over foreground
-    voxel coordinates along the requested axis.
     """
     size = arr.shape[axis]
 
-    if mask is not None and np.any(mask):
-        coords = np.where(mask)[axis]
+    if n_slices == 7:
         percentiles = [10, 20, 30, 50, 70, 80, 90]
-        slices = np.percentile(coords, percentiles).astype(int)
     else:
-        percentiles = [10, 20, 30, 50, 70, 80, 90]
-        slices = np.percentile(np.arange(size), percentiles).astype(int)
+        percentiles = np.linspace(10, 90, n_slices)
 
+    if mask is not None and np.any(mask):
+        foreground = mask.astype(bool)
+    else:
+        foreground = np.isfinite(arr) & (np.abs(arr) > eps)
+
+    if not np.any(foreground):
+        coords = np.arange(size)
+    else:
+        coords = np.where(foreground)[axis]
+
+    lo = int(coords.min())
+    hi = int(coords.max())
+
+    if hi <= lo:
+        return [size // 2]
+
+    slices = np.percentile(np.arange(lo, hi + 1), percentiles).astype(int)
     slices = np.clip(slices, 0, size - 1)
 
-    # remove duplicates while preserving order
     unique_slices = []
     for s in slices.tolist():
         if s not in unique_slices:
             unique_slices.append(s)
 
     return unique_slices
+
 
 def parse_thr_mask(thr_mask: str):
     """
