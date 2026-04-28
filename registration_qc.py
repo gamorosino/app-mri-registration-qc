@@ -31,6 +31,45 @@ from scipy.ndimage import sobel
 # Helpers
 # ---------------------------------------------------------------------------
 
+def plot_mask_overlap(
+    fixed_mask: np.ndarray,
+    moving_mask: np.ndarray,
+    axis: int,
+    view_name: str,
+    output_path: str,
+):
+    """
+    Visualize overlap between two binary masks.
+
+    Colors:
+    - True Positive (overlap): white
+    - False Positive / False Negative: red
+    - True Negative: black
+    """
+    idx = fixed_mask.shape[axis] // 2
+
+    f_sl = np.take(fixed_mask, idx, axis=axis)
+    m_sl = np.take(moving_mask, idx, axis=axis)
+
+    tp = np.logical_and(f_sl, m_sl)
+    mismatch = np.logical_xor(f_sl, m_sl)
+
+    rgb = np.zeros((*f_sl.shape, 3), dtype=np.float32)
+
+    # TP → green
+    rgb[tp] = [0.0, 1.0, 0.0]
+
+    # mismatch → red
+    rgb[mismatch] = [1.0, 0.0, 0.0]
+
+    plt.figure(figsize=(4, 4))
+    plt.imshow(rgb.transpose(1, 0, 2), origin="lower")
+    plt.title(f"Mask overlap — {view_name}")
+    plt.axis("off")
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close()
+
 def parse_thr_mask(thr_mask: str):
     """
     Parse threshold mask argument.
@@ -466,7 +505,19 @@ def run_qc(
         # expose at top-level
         metrics["dice"] = overlap["dice"]
         metrics["jaccard"] = overlap["jaccard"]
-
+        # Generate overlap visualizations
+        for view_name, axis in VIEWS.items():
+            out_png = os.path.join(output_dir, f"mask_overlap_{view_name}.png")
+        
+            plot_mask_overlap(
+                fixed_thr_mask,
+                moving_thr_mask,
+                axis=axis,
+                view_name=view_name,
+                output_path=out_png,
+            )
+        
+            print(f"[QC]   Saved {out_png}")
         print(
             f"[QC]   Threshold mask = "
             f"{lower}" + (f",{upper}" if upper is not None else "")
