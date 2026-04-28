@@ -26,10 +26,79 @@ import matplotlib.pyplot as plt
 import numpy as np
 import nibabel as nib
 from scipy.ndimage import sobel
+from matplotlib.patches import Patch
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+
+def plot_mask_overlap(
+    fixed_mask,
+    moving_mask,
+    axis,
+    view_name,
+    output_path,
+    mask=None,
+    n_slices=7,
+):
+    slices = get_multi_slices(fixed_mask, axis, mask, n_slices)
+
+    fig, axes = plt.subplots(1, len(slices), figsize=(3 * len(slices), 3))
+
+    if len(slices) == 1:
+        axes = [axes]
+
+    for ax, idx in zip(axes, slices):
+        f_sl = np.take(fixed_mask, idx, axis=axis)
+        m_sl = np.take(moving_mask, idx, axis=axis)
+
+        tp = np.logical_and(f_sl, m_sl)
+        mismatch = np.logical_xor(f_sl, m_sl)
+
+        rgb = np.zeros((*f_sl.shape, 3), dtype=np.float32)
+        rgb[tp] = [0, 1, 0]   # green
+        rgb[mismatch] = [1, 0, 0]  # red
+
+        ax.imshow(rgb.transpose(1, 0, 2), origin="lower")
+        ax.set_title(f"{idx}", fontsize=8)
+        ax.axis("off")
+
+    # legend (once)
+    legend_elements = [
+        Patch(facecolor="green", label="Overlap (TP)"),
+        Patch(facecolor="red", label="Mismatch (FP/FN)"),
+        Patch(facecolor="black", label="Background"),
+    ]
+
+    fig.legend(
+        handles=legend_elements,
+        loc="lower center",
+        bbox_to_anchor=(0.5, -0.15),
+        ncol=3,
+        fontsize=8,
+    )
+
+    fig.suptitle(f"Threshold mask overlap — {view_name}", fontsize=12)
+
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+
+def get_multi_slices(arr, axis, mask=None, n_slices=7):
+    size = arr.shape[axis]
+
+    if mask is not None:
+        coords = np.where(mask)
+        lo = coords[axis].min()
+        hi = coords[axis].max()
+    else:
+        lo, hi = 0, size - 1
+
+    if hi <= lo:
+        return [size // 2]
+
+    return np.linspace(lo, hi, n_slices).astype(int).tolist()
 
 def plot_mask_overlap(
     fixed_mask: np.ndarray,
@@ -515,6 +584,8 @@ def run_qc(
                 axis=axis,
                 view_name=view_name,
                 output_path=out_png,
+                mask=mask,
+                n_slices=7,
             )
         
             print(f"[QC]   Saved {out_png}")
