@@ -72,8 +72,8 @@ def plot_mask_overlap(
         ax.set_yticks([])
     # legend (once)
     legend_elements = [
-        Patch(facecolor="green", label="Overlap (TP)"),
-        Patch(facecolor="red", label="Mismatch (FP/FN)"),
+        Patch(facecolor="green", label="Overlap"),
+        Patch(facecolor="red", label="Mismatch"),
         Patch(facecolor="black", label="Background"),
     ]
 
