@@ -47,7 +47,7 @@ def plot_mask_overlap(
     fig, axes = plt.subplots(
             1,
             len(slices),
-            figsize=(1.35 * len(slices), 2.6),
+            figsize=(1.35 * len(slices), 3.0),
             gridspec_kw={"wspace": 0.01},
         )
 
@@ -79,19 +79,18 @@ def plot_mask_overlap(
 
     fig.legend(
     handles=legend_elements,
-    loc="lower center",
-    bbox_to_anchor=(0.5, 0.02),
-    ncol=3,
-    fontsize=7,
-        )
+    loc="center left",
+    bbox_to_anchor=(1.01, 0.5),
+    ncol=1,
+    fontsize=8,
+    frameon=False,)
 
-    fig.suptitle(f"Threshold mask overlap — {view_name}", fontsize=10)
     fig.subplots_adjust(
-        left=0.005,
-        right=0.995,
-        top=0.82,
-        bottom=0.18,
-        wspace=0.01,
+    left=0.005,
+    right=0.88,  
+    top=0.95,
+    bottom=0.05,
+    wspace=0.01,
     )
     
     fig.savefig(output_path, dpi=150, bbox_inches="tight", pad_inches=0.01)
