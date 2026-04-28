@@ -80,18 +80,19 @@ def plot_mask_overlap(
     fig.legend(
     handles=legend_elements,
     loc="center left",
-    bbox_to_anchor=(1.01, 0.5),
+    bbox_to_anchor=(0.92, 0.5),
     ncol=1,
     fontsize=8,
-    frameon=False,)
+    frameon=False,
+        )
 
     fig.subplots_adjust(
     left=0.005,
-    right=0.88,  
+    right=0.93,
     top=0.95,
     bottom=0.05,
     wspace=0.01,
-    )
+        )
     
     fig.savefig(output_path, dpi=150, bbox_inches="tight", pad_inches=0.01)
     plt.close(fig)
